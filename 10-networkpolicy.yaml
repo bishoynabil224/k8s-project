@@ -1,0 +1,173 @@
+# ======================================================
+# 1) Default deny all ingress + egress for every pod
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 01-deny-all
+  namespace: banking
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# ======================================================
+# 2) Allow API pods to RECEIVE traffic from ingress controller
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 02-allow-ingress-to-api
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: banking-api
+
+  policyTypes:
+  - Ingress
+
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+# ======================================================
+# 3) Allow Dashboard to RECEIVE traffic from ingress controller
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 03-allow-ingress-to-dashboard
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: dashboard
+
+  policyTypes:
+  - Ingress
+
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+
+    ports:
+    - protocol: TCP
+      port: 80
+
+---
+# ======================================================
+# 4) Allow API pods to SEND traffic to PostgreSQL
+# (Egress from API)
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 04-allow-api-egress-to-db
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: banking-api
+
+  policyTypes:
+  - Egress
+
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# ======================================================
+# 5) Allow PostgreSQL to RECEIVE traffic only from API
+# (Ingress to DB)
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 05-allow-api-to-db
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+
+  policyTypes:
+  - Ingress
+
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: banking-api
+
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# ======================================================
+# 6) Allow DNS egress (VERY IMPORTANT)
+# So pods can resolve postgres-db service name
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 06-allow-dns
+  namespace: banking
+spec:
+  podSelector: {}
+
+  policyTypes:
+  - Egress
+
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# ======================================================
+# 7) Allow Fluentd to receive from all banking pods
+# (optional depending on implementation, but fits project's 7 policies)
+# ======================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: 07-allow-to-fluentd
+  namespace: banking
+spec:
+  podSelector:
+    matchLabels:
+      app: fluentd
+
+  policyTypes:
+  - Ingress
+
+  ingress:
+  - from:
+    - podSelector: {}

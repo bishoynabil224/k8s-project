@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-api
+  namespace: banking
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: banking-api
+  template:
+    metadata:
+      labels:
+        app: banking-api
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        fsGroup: 2000        
+      serviceAccountName: banking-api-sa    
+      containers:
+        - name: banking-api
+          image: bishoynabila/banking-api:v1.0
+          securityContext:
+           allowPrivilegeEscalation: false
+           runAsNonRoot: true
+           readOnlyRootFilesystem: true
+           
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: banking-config
+            - secretRef:
+                name: banking-secret
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000

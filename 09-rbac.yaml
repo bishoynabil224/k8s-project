@@ -1,0 +1,144 @@
+# =========================================================
+# SERVICE ACCOUNT: API
+# =========================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-api-sa
+  namespace: banking
+
+---
+# =========================================================
+# SERVICE ACCOUNT: Dashboard
+# =========================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-dashboard-sa
+  namespace: banking
+
+---
+# =========================================================
+# ROLE FOR API
+# Least privilege:
+# Can read pods/services/endpoints (common internal discovery)
+# Cannot touch secrets
+# Cannot delete anything
+# =========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: banking-api-role
+  namespace: banking
+
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  - services
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+
+---
+# =========================================================
+# ROLE FOR DASHBOARD
+# Very limited:
+# read-only access to services (if needed)
+# =========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: banking-dashboard-role
+  namespace: banking
+
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+
+---
+# =========================================================
+# BIND API SA -> API ROLE
+# =========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: banking-api-binding
+  namespace: banking
+
+subjects:
+- kind: ServiceAccount
+  name: banking-api-sa
+  namespace: banking
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: banking-api-role
+
+---
+# =========================================================
+# BIND DASHBOARD SA -> DASHBOARD ROLE
+# =========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: banking-dashboard-binding
+  namespace: banking
+
+subjects:
+- kind: ServiceAccount
+  name: banking-dashboard-sa
+  namespace: banking
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: banking-dashboard-role
+
+---
+# =========================================================
+# ROLE FOR "developer" USER (for demo requirement)
+# can GET pods
+# cannot delete pods
+# cannot get secrets
+# =========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer-readonly
+  namespace: banking
+
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+
+---
+# =========================================================
+# BIND USER "developer" -> developer-readonly ROLE
+# (This is a User subject, not a ServiceAccount)
+# =========================================================
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding
+  namespace: banking
+
+subjects:
+- kind: User
+  name: developer
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: developer-readonly

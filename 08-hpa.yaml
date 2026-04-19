@@ -1,0 +1,53 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: banking-api-hpa
+  namespace: banking
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: banking-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+---
+
+# VPA for Banking API
+
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: banking-api-vpa
+  namespace: banking
+
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: banking-api
+
+  updatePolicy:
+    updateMode: "Initial"
+
+  resourcePolicy:
+    containerPolicies:
+    - containerName: api
+    
+      minAllowed:
+        cpu: 200m
+        memory: 256Mi
+
+      maxAllowed:
+        cpu: "2"
+        memory: 2Gi
+
+      controlledResources:
+      - cpu
+      - memory
