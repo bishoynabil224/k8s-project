@@ -4,6 +4,7 @@ metadata:
   name: banking-ingress
   namespace: banking
 spec:
+  ingressClassName: nginx
   rules:
     - host: banking.local
       http:
@@ -22,3 +23,19 @@ spec:
                 name: banking-api-service
                 port:
                   number: 3000
+           
+          - path: /health
+            pathType: Exact
+            backend: 
+              service:
+                name: banking-api-service
+                port:
+                  number: 3000            
+
+          - path: /ready
+            pathType: Exact
+            backend: 
+              service:
+                name: banking-api-service
+                port:
+                  number: 3000                    

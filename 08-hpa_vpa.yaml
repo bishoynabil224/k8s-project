@@ -38,7 +38,7 @@ spec:
 
   resourcePolicy:
     containerPolicies:
-    - containerName: banking-api
+    - containerName: api
     
       minAllowed:
         cpu: 200m

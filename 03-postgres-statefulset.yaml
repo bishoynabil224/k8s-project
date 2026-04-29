@@ -48,9 +48,9 @@ spec:
                   key: DB_PASSWORD
           securityContext:
             allowPrivilegeEscalation: false
-            capabilities:
-               drop:
-               - ALL        
+#            capabilities:
+#              drop:
+#              - ALL        
           ports:
             - containerPort: 5432
           volumeMounts:
